@@ -94,6 +94,41 @@ class _CredentialViewState extends State<CredentialView> {
     setState(() => _loading = false);
   }
 
+  Future<void> _confirmAndDelete(int index) async {
+    final id = _credentials[index]['id'] as String;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete credential?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      final res = await ApiClient.deleteCredential(id, context);
+      if (res.containsKey('message')) {
+        setState(() => _credentials.removeAt(index));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(res['message'])));
+      } else {
+        final err = res['error']['message'] ?? 'Failed to delete';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(err)));
+      }
+    }
+  }
+
   // ✅ Fetch credentials and always refresh _credentials state
   Future<void> _fetchCredentials() async {
     setState(() => _loading = true);
@@ -424,7 +459,7 @@ class _CredentialViewState extends State<CredentialView> {
                       final types = List<String>.from(parsed['type'] as List);
 
                       return GestureDetector(
-                        // onLongPress: () => _confirmAndDelete(i),
+                        onLongPress: () => _confirmAndDelete(i),
                         child: InkWell(
                           onTap: () {
                             Navigator.of(context).push(
@@ -449,112 +484,91 @@ class _CredentialViewState extends State<CredentialView> {
                               ],
                             ),
                             padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (fullName != null) ...[
-                                  Text(
-                                    fullName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                ],
-                                if (credentialTitle != null) ...[
-                                  Text(
-                                    credentialTitle,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  // const SizedBox(height: 8),
-                                ],
-
-                                if (credentialLevel != null) ...[
-                                  Text(
-                                    credentialLevel,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                ],
-
-                                if (issuanceDate != null &&
-                                    expirationDate != null)
-                                  Column(
-                                    children: [
-                                      if (dob != null)
-                                        Row(
-                                          children: [
-                                            Text(
-                                              'DOB            : ',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-
-                                            Text(
-                                              dob,
-                                              style: const TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                    ],
-                                  ),
-
-                                const Spacer(),
-
-                                if (email != null)
-                                  Text(
-                                    '📧 $email',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-
-                                if (issuedBy != null)
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Issued By  : ',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                            child: Flexible(
+                              fit: FlexFit.loose,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (fullName != null) ...[
+                                    Text(
+                                      fullName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                       ),
-
-                                      Text(
-                                        ' ${issuedBy}',
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                  ],
+                                  if (credentialTitle != null) ...[
+                                    Text(
+                                      credentialTitle,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    ],
-                                  ),
-                                SizedBox(
-                                  child: Row(
-                                    children: [
-                                      if (issuanceDate != null)
+                                    ),
+                                    // const SizedBox(height: 8),
+                                  ],
+
+                                  if (credentialLevel != null) ...[
+                                    Text(
+                                      credentialLevel,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+
+                                  if (issuanceDate != null &&
+                                      expirationDate != null)
+                                    Column(
+                                      children: [
+                                        if (dob != null)
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'DOB            : ',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+
+                                              Text(
+                                                dob,
+                                                style: const TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                      ],
+                                    ),
+
+                                  const Spacer(),
+
+                                  if (email != null)
+                                    Text(
+                                      '📧 $email',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+
+                                  if (issuedBy != null)
+                                    Row(
+                                      children: [
                                         Text(
-                                          'Issued on  : ',
+                                          'Issued By  : ',
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 10,
@@ -562,73 +576,101 @@ class _CredentialViewState extends State<CredentialView> {
                                           ),
                                         ),
 
-                                      Text(
-                                        ' ${issuanceDate}',
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
+                                        Flexible(
+                                          child: Text(
+                                            issuedBy,
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                      ],
+                                    ),
+                                  SizedBox(
+                                    child: Row(
+                                      children: [
+                                        if (issuanceDate != null)
+                                          Text(
+                                            'Issued on  : ',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
 
-                                      ///
-                                    ],
+                                        Text(
+                                          ' ${issuanceDate}',
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+
+                                        ///
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                // const SizedBox(height: 5),
-                                if (expirationDate != null)
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Expires on : ',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+                                  // const SizedBox(height: 5),
+                                  if (expirationDate != null)
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Expires on : ',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
 
-                                      Text(
-                                        expirationDate,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
+                                        Text(
+                                          expirationDate,
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                const SizedBox(height: 5),
+                                      ],
+                                    ),
+                                  const SizedBox(height: 5),
 
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 2,
-                                  children: types.map((t) {
-                                    final type = t == t;
-                                    return Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 2,
-                                        horizontal: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: type
-                                            ? Colors.greenAccent
-                                            : Colors.white24,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        t,
-                                        style: TextStyle(
+                                  Wrap(
+                                    spacing: 4,
+                                    runSpacing: 2,
+                                    children: types.map((t) {
+                                      final type = t == t;
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 2,
+                                          horizontal: 6,
+                                        ),
+                                        decoration: BoxDecoration(
                                           color: type
-                                              ? Colors.black87
-                                              : Colors.white70,
-                                          fontSize: 8,
+                                              ? Colors.greenAccent
+                                              : Colors.white24,
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
+                                        child: Text(
+                                          t,
+                                          style: TextStyle(
+                                            color: type
+                                                ? Colors.black87
+                                                : Colors.white70,
+                                            fontSize: 8,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

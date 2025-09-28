@@ -286,7 +286,7 @@ class ApiClient {
     }
   }
 
-  static Future<Map<String, dynamic>> getCredentials(
+  /*static Future<Map<String, dynamic>> getCredentials(
     BuildContext context,
   ) async {
     final prefs = await SharedPreferences.getInstance();
@@ -304,7 +304,56 @@ class ApiClient {
       final url =
           '${Api.baseUrl}/wallet-api/wallet/$walletId/credentials?cacheBuster=$timestamp';
       print(' - full URL: $url');
+      final payload = {'showDeleted': 'false', 'sortBy': 'addedOn'};
+      final response = await _dio.get(
+        data: json.encode(payload),
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        ),
+      );
 
+      print(' - response status: ${response.statusCode}');
+      return {'credentials': response.data};
+    } on DioException catch (e) {
+      print(' - error: ${e.message}');
+      if (e.response != null) {
+        print(' - error response status: ${e.response!.statusCode}');
+        print(' - error response data: ${e.response!.data}');
+      }
+      return {
+        'error': e.response?.data ?? {'message': 'Failed to fetch credentials'},
+      };
+    }
+  }*/
+
+  static Future<Map<String, dynamic>> getCredentials(
+    BuildContext context,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final walletId = prefs.getString('walletId');
+
+    print('getCredentials called with:');
+    print(' - walletId: $walletId');
+    print(
+      ' - token: ${token != null ? "${token.substring(0, 20)}..." : "null"}',
+    );
+
+    try {
+      var timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      final url =
+          '${Api.baseUrl}/wallet-api/wallet/$walletId/credentials?cacheBuster=$timestamp&showDeleted=false';
+
+      print(' - full URL: $url');
+
+      // Perform GET request with URL and headers
       final response = await _dio.get(
         url,
         options: Options(
